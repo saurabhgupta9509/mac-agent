@@ -13,8 +13,7 @@ use std::sync::atomic::{AtomicBool, Ordering};
 use std::time::Duration;
 
 use dlp_agent_mac::core::service_runner;
-use dlp_agent_mac::{credential_store, file_logger, network_utils};
-use file_logger::FileLogger;
+use dlp_agent_mac::file_logger::FileLogger;
 
 fn main() {
     // Initialize file logger
