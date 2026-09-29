@@ -169,12 +169,23 @@ impl ServerCommunicator {
         token: &str,
         caps: &[PolicyCapability],
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
-        let url = format!("{}/api/agent/capabilities/{}", self.base_url, agent_id);
-        let _ = self.client.post(&url)
+        let url = format!("{}/api/agent/capabilities", self.base_url);
+        let request_data = serde_json::json!({
+            "agentId": agent_id,
+            "capabilities": caps
+        });
+        let resp = self.client.post(&url)
             .header("Authorization", format!("Bearer {}", token.trim_start_matches("Bearer ")))
-            .json(&caps)
+            .header("Content-Type", "application/json")
+            .json(&request_data)
             .send()
-            .await;
+            .await?;
+
+        if resp.status().is_success() {
+            FileLogger::info(&format!("[Communicator] Successfully registered {} capabilities with backend", caps.len()));
+        } else {
+            FileLogger::warn(&format!("[Communicator] Failed to register capabilities: HTTP {}", resp.status()));
+        }
         Ok(())
     }
 
@@ -220,7 +231,7 @@ impl ServerCommunicator {
 
     /// Send periodic heartbeat
     pub async fn send_heartbeat(&self, agent_id: u64, token: &str) -> Result<bool, Box<dyn std::error::Error + Send + Sync>> {
-        let url = format!("{}/api/agent/heartbeat/{}", self.base_url, agent_id);
+        let url = format!("{}/api/agent/heartbeat?agentId={}", self.base_url, agent_id);
         let resp = self.client.post(&url)
             .header("Authorization", format!("Bearer {}", token.trim_start_matches("Bearer ")))
             .send()
