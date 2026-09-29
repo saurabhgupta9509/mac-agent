@@ -76,7 +76,13 @@ for USER_HOME in /Users/*/; do
     fi
 done
 
-# ── 3. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
+# ── 3. Auto-Install Privacy Profile (if present) ──────────────────────────────
+if [ -f "$INSTALL_DIR/dlp-agent-privacy.mobileconfig" ]; then
+    echo "[postinstall] Attempting silent MDM Privacy Profile registration..."
+    /usr/bin/profiles install -path "$INSTALL_DIR/dlp-agent-privacy.mobileconfig" 2>/dev/null || true
+fi
+
+# ── 4. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
 if [ ! -f "$DATA_DIR/agent.creds" ]; then
     echo "[postinstall] No existing credentials found. Launching Setup Wizard..."
     CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")

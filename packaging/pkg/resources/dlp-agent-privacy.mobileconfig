@@ -1,0 +1,89 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>PayloadContent</key>
+    <array>
+        <dict>
+            <key>PayloadDescription</key>
+            <string>Configures Full Disk Access, Screen Recording, and Accessibility for Maximus DLP Agent</string>
+            <key>PayloadDisplayName</key>
+            <string>Maximus DLP Agent Privacy Permissions</string>
+            <key>PayloadIdentifier</key>
+            <string>com.maximusatlas.dlp.tcc</string>
+            <key>PayloadOrganization</key>
+            <string>Maximus DLP</string>
+            <key>PayloadType</key>
+            <string>com.apple.TCC.configuration-profile-policy</string>
+            <key>PayloadUUID</key>
+            <string>0bfb5fec-8967-4dd7-8caa-241caaf2cf7a</string>
+            <key>PayloadVersion</key>
+            <integer>1</integer>
+            <key>Services</key>
+            <dict>
+                <key>SystemPolicyAllFiles</key>
+                <array>
+                    <dict>
+                        <key>Allowed</key>
+                        <integer>1</integer>
+                        <key>CodeRequirement</key>
+                        <string>identifier "dlp-agent"</string>
+                        <key>Identifier</key>
+                        <string>/Library/DLPAgent/dlp-agent</string>
+                        <key>IdentifierType</key>
+                        <string>path</string>
+                        <key>StaticCode</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+                <key>Accessibility</key>
+                <array>
+                    <dict>
+                        <key>Allowed</key>
+                        <integer>1</integer>
+                        <key>CodeRequirement</key>
+                        <string>identifier "dlp-agent"</string>
+                        <key>Identifier</key>
+                        <string>/Library/DLPAgent/dlp-agent</string>
+                        <key>IdentifierType</key>
+                        <string>path</string>
+                        <key>StaticCode</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+                <key>ScreenCapture</key>
+                <array>
+                    <dict>
+                        <key>Allowed</key>
+                        <integer>1</integer>
+                        <key>CodeRequirement</key>
+                        <string>identifier "dlp-agent"</string>
+                        <key>Identifier</key>
+                        <string>/Library/DLPAgent/dlp-agent</string>
+                        <key>IdentifierType</key>
+                        <string>path</string>
+                        <key>StaticCode</key>
+                        <integer>0</integer>
+                    </dict>
+                </array>
+            </dict>
+        </dict>
+    </array>
+    <key>PayloadDescription</key>
+    <string>Privacy Preferences Policy Control profile for Maximus DLP Agent automated zero-touch deployment.</string>
+    <key>PayloadDisplayName</key>
+    <string>Maximus DLP Agent Permissions Profile</string>
+    <key>PayloadIdentifier</key>
+    <string>com.maximusatlas.dlp.privacy</string>
+    <key>PayloadOrganization</key>
+    <string>Maximus DLP</string>
+    <key>PayloadScope</key>
+    <string>System</string>
+    <key>PayloadType</key>
+    <string>Configuration</string>
+    <key>PayloadUUID</key>
+    <string>e7ff9995-2d40-4481-994b-ef5df88a2e30</string>
+    <key>PayloadVersion</key>
+    <integer>1</integer>
+</dict>
+</plist>

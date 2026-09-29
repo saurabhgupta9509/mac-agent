@@ -121,9 +121,14 @@ pub fn run_macos_setup_wizard() {
                 .args(["kickstart", "-k", "system/com.dlpagent.daemon"])
                 .output();
 
+            // Automatically open macOS Privacy Settings pane directly (Full Disk Access)
+            let _ = Command::new("open")
+                .arg("x-apple.systempreferences:com.apple.preference.security?Privacy_AllFiles")
+                .spawn();
+
             // Show success notification and auto-close
             let success_script = format!(
-                r#"display dialog "✅ DLP Agent Activated Successfully! \n\nAgent ID: {}\nServer: {}\n\nBackground protection is now active." with title "Activation Complete" buttons {{"Finish"}} default button "Finish" with icon note"#,
+                r#"display dialog "✅ DLP Agent Activated Successfully! \n\nAgent ID: {}\nServer: {}\n\nSystem Settings has opened to Full Disk Access. Please verify 'dlp-agent' is enabled." with title "Activation Complete" buttons {{"Finish"}} default button "Finish" with icon note"#,
                 auth.agent_id, server_url
             );
             let _ = run_osascript(&success_script);

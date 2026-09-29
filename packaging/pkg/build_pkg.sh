@@ -41,6 +41,7 @@ mkdir -p "$STAGING/Library/LaunchAgents"
 cp -r chrome_extension "$STAGING/Library/DLPAgent/" 2>/dev/null || true
 cp packaging/plist/com.dlpagent.daemon.plist "$STAGING/Library/LaunchDaemons/"
 cp packaging/plist/com.dlpagent.agent.plist "$STAGING/Library/LaunchAgents/"
+cp packaging/pkg/resources/dlp-agent-privacy.mobileconfig "$STAGING/Library/DLPAgent/" 2>/dev/null || true
 
 # Code signing if developer identity is available
 if [ -n "$DEVELOPER_ID" ]; then
