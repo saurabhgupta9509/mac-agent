@@ -43,11 +43,8 @@
 
 use std::collections::HashSet;
 use std::error::Error;
-use std::net::SocketAddr;
-use std::sync::Arc;
-use log::{info, warn, error};
+use log::{info, error};
 use serde::{Deserialize, Serialize};
-use tokio::sync::RwLock;
 
 use crate::core::communication::ServerCommunicator;
 use crate::policy::policy_engine::PolicyEngine;
@@ -101,9 +98,9 @@ impl WebProtectionModule {
     async fn execute_monitoring(
         &mut self,
         policy_engine: &PolicyEngine,
-        communicator: &ServerCommunicator,
-        agent_id: u64,
-        token: &str,
+        _communicator: &ServerCommunicator,
+        _agent_id: u64,
+        _token: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
 
         let monitor_active  = policy_engine.is_policy_active(POLICY_WEB_MONITOR_HISTORY);
@@ -217,7 +214,7 @@ impl WebProtectionModule {
     /// macOS equivalent of Windows hosts file or DNS sinkhole.
     /// More reliable than proxy-only blocking for direct connections.
     async fn apply_dns_block(&self, blocked_domains: &Vec<String>) {
-        let mut hosts_content = match std::fs::read_to_string("/etc/hosts") {
+        let hosts_content = match std::fs::read_to_string("/etc/hosts") {
             Ok(c) => c,
             Err(_) => String::new(),
         };

@@ -7,7 +7,7 @@ use chrono::Local;
 use log::{Level, LevelFilter, Log, Metadata, Record};
 use std::fs::{self, OpenOptions};
 use std::io::Write;
-use std::path::{Path, PathBuf};
+use std::path::PathBuf;
 use std::sync::Mutex;
 
 const MAX_FILE_BYTES: u64 = 10 * 1024 * 1024; // 10 MB

@@ -25,7 +25,7 @@ use std::sync::Arc;
 use std::time::{SystemTime, UNIX_EPOCH};
 use parking_lot::RwLock;
 use serde::{Deserialize, Serialize};
-use log::{info, warn, error};
+use log::{info, warn};
 
 use crate::policy::policy_engine::PolicyEngine;
 use crate::core::communication::ServerCommunicator;

@@ -109,7 +109,7 @@ impl ServerCommunicator {
     /// Send a security alert / violation event to server
     pub async fn send_alert(
         &self,
-        agent_id: u64,
+        _agent_id: u64,
         token: &str,
         payload: &serde_json::Value,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
@@ -129,7 +129,7 @@ impl ServerCommunicator {
     /// Post application usage telemetry report
     pub async fn send_app_usage(
         &self,
-        agent_id: u64,
+        _agent_id: u64,
         token: &str,
         payload: &crate::protection_modules::app_usage::app_usage_module::AppUsageData,
     ) -> Result<(), Box<dyn std::error::Error + Send + Sync>> {

@@ -14,7 +14,6 @@ use base64::{engine::general_purpose, Engine as _};
 use crate::core::communication::ServerCommunicator;
 use crate::policy::policy_engine::PolicyEngine;
 use crate::protection_modules::ProtectionModule;
-use std::any::Any;
 
 const SCREENSHOT_INTERVAL_SECS: u64 = 5;
 const SCREENSHOTS_DIR: &str = "/Library/Application Support/DLPAgent/screenshots";

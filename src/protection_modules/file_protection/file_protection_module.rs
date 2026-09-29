@@ -35,7 +35,7 @@ use std::error::Error;
 use std::path::Path;
 use std::sync::Arc;
 use parking_lot::RwLock;
-use log::{info, warn, error};
+use log::{info, warn};
 use serde::{Deserialize, Serialize};
 
 use crate::core::communication::ServerCommunicator;

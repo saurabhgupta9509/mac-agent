@@ -5,8 +5,8 @@
 
 use std::collections::HashMap;
 use std::sync::{Arc, Mutex};
-use chrono::{Local, Timelike, Datelike, Weekday};
-use log::{debug, info, warn};
+use chrono::{Local, Datelike, Weekday};
+use log::{debug, warn};
 use serde::{Deserialize, Serialize};
 
 fn deserialize_null_default<'de, D, T>(deserializer: D) -> Result<T, D::Error>
