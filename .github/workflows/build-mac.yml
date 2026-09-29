@@ -1,0 +1,36 @@
+name: Build macOS DLP Agent Installer
+
+on:
+  push:
+    branches: [ main, master ]
+  workflow_dispatch: # Allows manual trigger from GitHub Actions UI
+
+jobs:
+  build-macos:
+    name: Build Universal .pkg for macOS
+    runs-on: macos-latest # Runs directly on GitHub's Apple Silicon / macOS cloud machines
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Install Rust Toolchain
+        uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin,x86_64-apple-darwin
+
+      - name: Make Scripts Executable
+        run: |
+          chmod +x packaging/pkg/build_pkg.sh
+          chmod +x packaging/scripts/*.sh
+
+      - name: Build Universal Package (.pkg)
+        run: |
+          ./packaging/pkg/build_pkg.sh
+
+      - name: Upload DLPAgent Installer (.pkg)
+        uses: actions/upload-artifact@v4
+        with:
+          name: DLPAgent-macOS-Installer
+          path: DLPAgent-*.pkg
+          if-no-files-found: error

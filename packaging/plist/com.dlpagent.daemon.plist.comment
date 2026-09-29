@@ -1,0 +1,6 @@
+// packaging/plist/com.dlpagent.daemon.plist
+// LaunchDaemon for root-level DLP Agent service.
+// Equivalent to Windows Service registration (sc create DLPAgent ...).
+//
+// Install: sudo cp com.dlpagent.daemon.plist /Library/LaunchDaemons/
+//          sudo launchctl bootstrap system /Library/LaunchDaemons/com.dlpagent.daemon.plist

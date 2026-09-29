@@ -1,0 +1,8 @@
+target/
+**/*.rs.bk
+*.pkg
+*.dmg
+core.pkg
+staging/
+.DS_Store
+*.log

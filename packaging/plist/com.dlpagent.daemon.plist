@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.dlpagent.daemon.plist — LaunchDaemon for DLP Agent
+  
+  Equivalent to Windows Service (sc create DLPAgent binPath= ...).
+  
+  Install:
+    sudo cp com.dlpagent.daemon.plist /Library/LaunchDaemons/
+    sudo launchctl bootstrap system /Library/LaunchDaemons/com.dlpagent.daemon.plist
+  
+  Start:
+    sudo launchctl kickstart system/com.dlpagent.daemon
+  
+  Stop (requires admin approval via DLP UI):
+    sudo launchctl bootout system/com.dlpagent.daemon
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dlpagent.daemon</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/DLPAgent/dlp-agent</string>
+    </array>
+
+    <!-- Run at system load (equivalent to SERVICE_AUTO_START) -->
+    <key>RunAtLoad</key>
+    <true/>
+
+    <!-- Keep alive (equivalent to SERVICE_FAILURE_RESTART) -->
+    <key>KeepAlive</key>
+    <true/>
+
+    <!-- Run as root (equivalent to LocalSystem account) -->
+    <!-- LaunchDaemons always run as root by default -->
+
+    <key>WorkingDirectory</key>
+    <string>/Library/DLPAgent</string>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/dlp-agent/stdout.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/dlp-agent/stderr.log</string>
+
+    <!-- Throttle restarts (equivalent to SC_ACTION_RESTART with delay) -->
+    <key>ThrottleInterval</key>
+    <integer>30</integer>
+
+    <!-- Environment variables -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>RUST_LOG</key>
+        <string>info</string>
+        <key>DLP_AGENT_HOME</key>
+        <string>/Library/Application Support/DLPAgent</string>
+    </dict>
+</dict>
+</plist>

@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN"
+    "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  com.dlpagent.agent.plist — LaunchAgent for DLP UI Helper
+  
+  Runs in the user's session (equivalent to the Windows --ui-helper process
+  launched via CreateProcessAsUserW into the active WTS session).
+  
+  Install:
+    sudo cp com.dlpagent.agent.plist /Library/LaunchAgents/
+    launchctl bootstrap gui/$(id -u) /Library/LaunchAgents/com.dlpagent.agent.plist
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.dlpagent.agent</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/Library/DLPAgent/dlp-agent</string>
+        <string>--ui-helper</string>
+    </array>
+
+    <key>RunAtLoad</key>
+    <true/>
+
+    <key>KeepAlive</key>
+    <true/>
+
+    <key>WorkingDirectory</key>
+    <string>/Library/DLPAgent</string>
+
+    <key>StandardOutPath</key>
+    <string>/var/log/dlp-agent/ui-helper.log</string>
+
+    <key>StandardErrorPath</key>
+    <string>/var/log/dlp-agent/ui-helper-err.log</string>
+
+    <key>ThrottleInterval</key>
+    <integer>10</integer>
+</dict>
+</plist>
