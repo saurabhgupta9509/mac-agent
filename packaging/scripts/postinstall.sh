@@ -84,11 +84,12 @@ fi
 
 # ── 4. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
 if [ ! -f "$DATA_DIR/agent.creds" ]; then
-    echo "[postinstall] No existing credentials found. Launching Setup Wizard..."
+    echo "[postinstall] No existing credentials found. Launching Setup Wizard in user GUI session..."
     CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
-    if [ -n "$CONSOLE_USER" ] && [ "$CONSOLE_USER" != "root" ]; then
-        # Launch in user GUI session
-        sudo -u "$CONSOLE_USER" /Library/DLPAgent/dlp-agent --setup &
+    USER_ID=$(id -u "$CONSOLE_USER" 2>/dev/null || echo "")
+    if [ -n "$USER_ID" ] && [ "$USER_ID" -gt 500 ]; then
+        # launchctl asuser enters the active Aqua GUI session namespace
+        launchctl asuser "$USER_ID" sudo -u "$CONSOLE_USER" /Library/DLPAgent/dlp-agent --setup &
     fi
 fi
 

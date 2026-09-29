@@ -117,6 +117,15 @@ fn run_daemon() {
 
 /// Runs in user session — monitors apps, clipboard, screen.
 fn run_ui_helper() {
+    FileLogger::info("Starting UI Helper in user session");
+
+    // Automatically prompt Setup Wizard if agent is not yet activated
+    let creds_file = "/Library/Application Support/DLPAgent/agent.creds";
+    if !std::path::Path::new(creds_file).exists() {
+        FileLogger::info("No agent.creds found — launching Setup Wizard directly in active user GUI session!");
+        dlp_agent_mac::core::setup_ui::run_macos_setup_wizard();
+    }
+
     let running = Arc::new(AtomicBool::new(true));
     let running_clone = running.clone();
 
