@@ -99,6 +99,19 @@ pub fn run_macos_setup_wizard() {
         Ok(auth) => {
             FileLogger::info(&format!("[SetupWizard] Authentication SUCCESS! Agent ID: {}", auth.agent_id));
 
+            // Immediately register all 5 capabilities directly with central server
+            let caps = crate::core::capabilities::PolicyCapability::all_capabilities();
+            let comm = ServerCommunicator::new(server_url.clone());
+            let token_str = auth.token.clone();
+            let agent_id = auth.agent_id;
+            let _ = rt.block_on(async {
+                if let Err(e) = comm.register_capabilities(agent_id, &token_str, &caps).await {
+                    FileLogger::warn(&format!("[SetupWizard] Failed to report capabilities during setup: {}", e));
+                } else {
+                    FileLogger::info(&format!("[SetupWizard] Successfully reported {} capabilities to central server", caps.len()));
+                }
+            });
+
             // Save credentials to root-protected store
             let store = CredentialStore {
                 server_url: server_url.clone(),

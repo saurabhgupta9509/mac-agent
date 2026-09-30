@@ -24,11 +24,19 @@ pub fn mark_service_started_by_admin() {
 pub async fn run_agent_until_stopped(running: Arc<AtomicBool>) {
     FileLogger::info("service_runner: Loading credentials for macOS daemon...");
 
-    let creds = match CredentialStore::load() {
-        Ok(c) => c,
-        Err(e) => {
-            FileLogger::error(&format!("Failed to load credentials: {}. Daemon cannot proceed without valid credentials.", e));
-            return;
+    let creds = loop {
+        match CredentialStore::load() {
+            Ok(c) => {
+                FileLogger::info(&format!("service_runner: Credentials loaded successfully for agent ID {}", c.agent_id));
+                break c;
+            }
+            Err(_) => {
+                if !running.load(Ordering::SeqCst) {
+                    return;
+                }
+                // Check every 3 seconds for credentials to be written by Setup Wizard
+                tokio::time::sleep(Duration::from_secs(3)).await;
+            }
         }
     };
 
