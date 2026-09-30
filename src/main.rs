@@ -21,7 +21,10 @@ fn main() {
 
     let args: Vec<String> = std::env::args().collect();
 
-    if args.contains(&"--ui-helper".to_string()) {
+    if args.iter().any(|arg| arg.starts_with("chrome-extension://") || arg.starts_with("edge-extension://") || arg == "--native-host") {
+        FileLogger::info("Native messaging host invoked by browser");
+        return;
+    } else if args.contains(&"--ui-helper".to_string()) {
         // User-session mode: launched by LaunchAgent
         FileLogger::info("Starting in UI Helper (user session) mode");
         run_ui_helper();
@@ -37,6 +40,10 @@ fn main() {
         // Setup wizard mode: prompts Server URL, Username, Password and activates agent
         FileLogger::info("Launching DLP Setup & Activation Wizard");
         dlp_agent_mac::core::setup_ui::run_macos_setup_wizard();
+    } else if args.contains(&"--help".to_string()) || args.contains(&"-h".to_string()) {
+        println!("DLP Agent for macOS v1.0.0");
+        println!("Usage: dlp-agent [--setup | --ui-helper | --verify-stop | --verify-start]");
+        return;
     } else {
         // Default: run as LaunchDaemon (root-level service)
         FileLogger::info("Starting DLP Agent daemon (macOS LaunchDaemon mode)");
