@@ -20,10 +20,15 @@ mkdir -p "$INSTALL_DIR"
 echo "[postinstall] Setting permissions..."
 chown -R root:wheel "$INSTALL_DIR"
 chmod 755 "$INSTALL_DIR/dlp-agent" 2>/dev/null || true
-chown root:wheel "$LOG_DIR"
-chmod 755 "$LOG_DIR"
-chown root:staff "$DATA_DIR"
-chmod 775 "$DATA_DIR"
+
+# Allow both root daemon and user LaunchAgent to write logs and data
+chown -R root:staff "$LOG_DIR"
+chmod 777 "$LOG_DIR"
+touch "$LOG_DIR/agent.log" "$LOG_DIR/ui-helper.log" "$LOG_DIR/ui-helper-err.log" 2>/dev/null || true
+chmod 666 "$LOG_DIR"/*.log 2>/dev/null || true
+
+chown -R root:staff "$DATA_DIR"
+chmod 777 "$DATA_DIR"
 
 # ── 1. Enterprise Browser Extension Policy Deployment ──────────────────────────
 echo "[postinstall] Configuring Enterprise Browser Policies..."
@@ -57,13 +62,15 @@ defaults write /Library/Preferences/com.google.Chrome ExtensionInstallForcelist 
 
 # ── 2. Loading Services ───────────────────────────────────────────────────────
 echo "[postinstall] Loading LaunchDaemon (root service)..."
-if launchctl list | grep -q "com.dlpagent.daemon"; then
-    launchctl bootout system "$DAEMON_PLIST" 2>/dev/null || true
-fi
+launchctl bootout system "$DAEMON_PLIST" 2>/dev/null || true
 launchctl bootstrap system "$DAEMON_PLIST"
+launchctl kickstart -k system/com.dlpagent.daemon 2>/dev/null || true
 echo "[postinstall] ✅ LaunchDaemon loaded."
 
 echo "[postinstall] Loading LaunchAgent (user GUI helper)..."
+CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
+CONSOLE_UID=$(id -u "$CONSOLE_USER" 2>/dev/null || echo "")
+
 for USER_HOME in /Users/*/; do
     USERNAME=$(basename "$USER_HOME")
     if [ "$USERNAME" = "Shared" ] || [ "$USERNAME" = ".localized" ]; then
@@ -71,7 +78,10 @@ for USER_HOME in /Users/*/; do
     fi
     USER_ID=$(id -u "$USERNAME" 2>/dev/null || true)
     if [ -n "$USER_ID" ] && [ "$USER_ID" -gt 500 ]; then
+        launchctl bootout "gui/$USER_ID/com.dlpagent.agent" 2>/dev/null || true
         launchctl bootstrap "gui/$USER_ID" "$AGENT_PLIST" 2>/dev/null || true
+        launchctl enable "gui/$USER_ID/com.dlpagent.agent" 2>/dev/null || true
+        launchctl kickstart -k -p "gui/$USER_ID/com.dlpagent.agent" 2>/dev/null || true
         echo "[postinstall] ✅ LaunchAgent loaded for: $USERNAME (uid=$USER_ID)"
     fi
 done
@@ -84,12 +94,10 @@ fi
 
 # ── 4. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
 if [ ! -f "$DATA_DIR/agent.creds" ]; then
-    echo "[postinstall] No existing credentials found. Launching Setup Wizard in user GUI session..."
-    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
-    USER_ID=$(id -u "$CONSOLE_USER" 2>/dev/null || echo "")
-    if [ -n "$USER_ID" ] && [ "$USER_ID" -gt 500 ]; then
-        # launchctl asuser enters the active Aqua GUI session namespace
-        launchctl asuser "$USER_ID" sudo -u "$CONSOLE_USER" /Library/DLPAgent/dlp-agent --setup &
+    echo "[postinstall] No existing credentials found. Launching Setup Wizard in active user GUI session..."
+    if [ -n "$CONSOLE_UID" ] && [ "$CONSOLE_UID" -gt 500 ]; then
+        # launchctl asuser enters the active Aqua GUI session namespace without sudo
+        launchctl asuser "$CONSOLE_UID" /Library/DLPAgent/dlp-agent --setup &
     fi
 fi
 

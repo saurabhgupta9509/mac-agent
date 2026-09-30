@@ -23,16 +23,19 @@ pub struct SetupParams {
 pub fn run_macos_setup_wizard() {
     FileLogger::info("[SetupWizard] Launching native macOS Setup Dialog...");
 
-    // ── AppleScript Native UI Dialogs ──────────────────────────────────────────
+    // ── AppleScript Native UI Dialogs (Forced to Foreground) ──────────────────
     // Step 1: Server URL
     let url_script = r#"
-        set sUrl to text returned of (display dialog "Enter DLP Central Server URL:" ¬
-            default answer "http://192.168.1.100:8080" ¬
-            with title "DLP Security Agent - Step 1/3" ¬
-            buttons {"Cancel", "Next"} ¬
-            default button "Next" ¬
-            with icon note)
-        return sUrl
+        tell application "System Events"
+            activate
+            set sUrl to text returned of (display dialog "Enter DLP Central Server URL:" ¬
+                default answer "http://192.168.1.100:8080" ¬
+                with title "DLP Security Agent - Step 1/3" ¬
+                buttons {"Cancel", "Next"} ¬
+                default button "Next" ¬
+                with icon note)
+            return sUrl
+        end tell
     "#;
 
     let server_url = match run_osascript(url_script) {
@@ -45,13 +48,16 @@ pub fn run_macos_setup_wizard() {
 
     // Step 2: Username
     let user_script = r#"
-        set uName to text returned of (display dialog "Enter Agent / Employee Username:" ¬
-            default answer "" ¬
-            with title "DLP Security Agent - Step 2/3" ¬
-            buttons {"Cancel", "Next"} ¬
-            default button "Next" ¬
-            with icon note)
-        return uName
+        tell application "System Events"
+            activate
+            set uName to text returned of (display dialog "Enter Agent / Employee Username:" ¬
+                default answer "" ¬
+                with title "DLP Security Agent - Step 2/3" ¬
+                buttons {"Cancel", "Next"} ¬
+                default button "Next" ¬
+                with icon note)
+            return uName
+        end tell
     "#;
 
     let username = match run_osascript(user_script) {
@@ -64,14 +70,17 @@ pub fn run_macos_setup_wizard() {
 
     // Step 3: Password (Hidden Input)
     let pass_script = r#"
-        set pWord to text returned of (display dialog "Enter Agent Password:" ¬
-            default answer "" ¬
-            with title "DLP Security Agent - Step 3/3" ¬
-            with hidden answer ¬
-            buttons {"Cancel", "Activate Agent"} ¬
-            default button "Activate Agent" ¬
-            with icon caution)
-        return pWord
+        tell application "System Events"
+            activate
+            set pWord to text returned of (display dialog "Enter Agent Password:" ¬
+                default answer "" ¬
+                with title "DLP Security Agent - Step 3/3" ¬
+                with hidden answer ¬
+                buttons {"Cancel", "Activate Agent"} ¬
+                default button "Activate Agent" ¬
+                with icon caution)
+            return pWord
+        end tell
     "#;
 
     let password = match run_osascript(pass_script) {
@@ -141,7 +150,10 @@ pub fn run_macos_setup_wizard() {
 
             // Show success notification and auto-close
             let success_script = format!(
-                r#"display dialog "✅ DLP Agent Activated Successfully! \n\nAgent ID: {}\nServer: {}\n\nSystem Settings has opened to Full Disk Access. Please verify 'dlp-agent' is enabled." with title "Activation Complete" buttons {{"Finish"}} default button "Finish" with icon note"#,
+                r#"tell application "System Events"
+                    activate
+                    display dialog "✅ DLP Agent Activated Successfully! \n\nAgent ID: {}\nServer: {}\n\nSystem Settings has opened to Full Disk Access. Please verify 'dlp-agent' is enabled." with title "Activation Complete" buttons {{"Finish"}} default button "Finish" with icon note
+                end tell"#,
                 auth.agent_id, server_url
             );
             let _ = run_osascript(&success_script);
@@ -170,7 +182,10 @@ fn run_osascript(script: &str) -> Option<String> {
 
 fn show_error_dialog(msg: &str) {
     let script = format!(
-        r#"display alert "DLP Setup Error" message "{}" as critical buttons {{"OK"}}"#,
+        r#"tell application "System Events"
+            activate
+            display alert "DLP Setup Error" message "{}" as critical buttons {{"OK"}}
+        end tell"#,
         msg.replace('"', "\\\"")
     );
     let _ = run_osascript(&script);
