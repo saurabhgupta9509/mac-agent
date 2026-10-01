@@ -68,7 +68,10 @@ launchctl kickstart -k system/com.dlpagent.daemon 2>/dev/null || true
 echo "[postinstall] ✅ LaunchDaemon loaded."
 
 echo "[postinstall] Loading LaunchAgent (user GUI helper)..."
-CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
+CONSOLE_USER=$(echo "show State:/Users/ConsoleUser" | scutil 2>/dev/null | awk '/Name :/ && !/loginwindow/ { print $3 }')
+if [ -z "$CONSOLE_USER" ]; then
+    CONSOLE_USER=$(stat -f "%Su" /dev/console 2>/dev/null || echo "")
+fi
 CONSOLE_UID=$(id -u "$CONSOLE_USER" 2>/dev/null || echo "")
 
 for USER_HOME in /Users/*/; do
@@ -95,9 +98,26 @@ fi
 # ── 4. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
 if [ ! -f "$DATA_DIR/agent.creds" ]; then
     echo "[postinstall] No existing credentials found. Launching Setup Wizard in active user GUI session..."
-    if [ -n "$CONSOLE_UID" ] && [ "$CONSOLE_UID" -gt 500 ]; then
-        # launchctl asuser enters the active Aqua GUI session namespace without sudo
-        launchctl asuser "$CONSOLE_UID" /Library/DLPAgent/dlp-agent --setup &
+    TARGET_USER="$CONSOLE_USER"
+    TARGET_UID="$CONSOLE_UID"
+
+    if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ] || [ -z "$TARGET_UID" ] || [ "$TARGET_UID" -le 500 ]; then
+        for UDIR in /Users/*; do
+            UNAME=$(basename "$UDIR")
+            if [ "$UNAME" != "Shared" ] && [ "$UNAME" != ".localized" ]; then
+                UID_C=$(id -u "$UNAME" 2>/dev/null || echo 0)
+                if [ "$UID_C" -gt 500 ]; then
+                    TARGET_USER="$UNAME"
+                    TARGET_UID="$UID_C"
+                    break
+                fi
+            fi
+        done
+    fi
+
+    if [ -n "$TARGET_UID" ] && [ "$TARGET_UID" -gt 500 ]; then
+        echo "[postinstall] Launching setup wizard for user $TARGET_USER (uid $TARGET_UID)..."
+        launchctl asuser "$TARGET_UID" sudo -u "$TARGET_USER" /Library/DLPAgent/dlp-agent --setup > /dev/null 2>&1 &
     fi
 fi
 

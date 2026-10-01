@@ -26,7 +26,7 @@ pub fn run_macos_setup_wizard() {
     // ── AppleScript Native UI Dialogs (Forced to Foreground) ──────────────────
     // Step 1: Server URL
     let url_script = r#"
-        tell application "System Events"
+        tell current application
             activate
             set sUrl to text returned of (display dialog "Enter DLP Central Server URL:" ¬
                 default answer "http://192.168.1.100:8080" ¬
@@ -48,7 +48,7 @@ pub fn run_macos_setup_wizard() {
 
     // Step 2: Username
     let user_script = r#"
-        tell application "System Events"
+        tell current application
             activate
             set uName to text returned of (display dialog "Enter Agent / Employee Username:" ¬
                 default answer "" ¬
@@ -70,7 +70,7 @@ pub fn run_macos_setup_wizard() {
 
     // Step 3: Password (Hidden Input)
     let pass_script = r#"
-        tell application "System Events"
+        tell current application
             activate
             set pWord to text returned of (display dialog "Enter Agent Password:" ¬
                 default answer "" ¬
@@ -150,7 +150,7 @@ pub fn run_macos_setup_wizard() {
 
             // Show success notification and auto-close
             let success_script = format!(
-                r#"tell application "System Events"
+                r#"tell current application
                     activate
                     display dialog "✅ DLP Agent Activated Successfully! \n\nAgent ID: {}\nServer: {}\n\nSystem Settings has opened to Full Disk Access. Please verify 'dlp-agent' is enabled." with title "Activation Complete" buttons {{"Finish"}} default button "Finish" with icon note
                 end tell"#,
@@ -176,13 +176,15 @@ fn run_osascript(script: &str) -> Option<String> {
     if output.status.success() {
         Some(String::from_utf8_lossy(&output.stdout).trim().to_string())
     } else {
+        let err = String::from_utf8_lossy(&output.stderr);
+        FileLogger::warn(&format!("[SetupWizard] osascript failed: {}", err));
         None
     }
 }
 
 fn show_error_dialog(msg: &str) {
     let script = format!(
-        r#"tell application "System Events"
+        r#"tell current application
             activate
             display alert "DLP Setup Error" message "{}" as critical buttons {{"OK"}}
         end tell"#,
