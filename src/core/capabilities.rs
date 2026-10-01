@@ -3,8 +3,6 @@ use serde::{Deserialize, Serialize};
 use crate::policy::policy_constants::{
     FILE_PROTECTION_ENABLED,
     POLICY_USB_STORAGE_BLOCK,
-    POLICY_MOBILE_DEVICE_BLOCK,
-    POLICY_USB_DEVICE_MONITOR,
     POLICY_WEB_MONITOR_HISTORY,
     POLICY_WEB_URL_BLOCK,
     POLICY_WEB_PARTIAL_ACCESS,
@@ -41,30 +39,12 @@ impl PolicyCapability {
         vec![
             PolicyCapability {
                 code: POLICY_USB_STORAGE_BLOCK.to_string(),
-                name: "External Device Storage Blocking".to_string(),
-                description: "Block unauthorized Standard USB flash drives, External SSDs, and SD cards using DiskArbitration.".to_string(),
+                name: "External Device Protection".to_string(),
+                description: "Block or control external storage devices (USB, SSD, SD, Mobile) to prevent data exfiltration.".to_string(),
                 category: "USB".to_string(),
                 action: "BLOCK".to_string(),
-                target: "EXTERNAL_STORAGE".to_string(),
+                target: "EXTERNAL_DEVICES".to_string(),
                 severity: "HIGH".to_string(),
-            },
-            PolicyCapability {
-                code: POLICY_MOBILE_DEVICE_BLOCK.to_string(),
-                name: "Mobile Device Blocking".to_string(),
-                description: "Block mobile phones and tablets (MTP/PTP) from accessing and transferring files.".to_string(),
-                category: "USB".to_string(),
-                action: "BLOCK".to_string(),
-                target: "MOBILE_DEVICES".to_string(),
-                severity: "HIGH".to_string(),
-            },
-            PolicyCapability {
-                code: POLICY_USB_DEVICE_MONITOR.to_string(),
-                name: "External Device Connection Monitoring".to_string(),
-                description: "Monitor and log all external device connection and disconnection events on macOS.".to_string(),
-                category: "USB".to_string(),
-                action: "MONITOR".to_string(),
-                target: "USB_CONNECTIONS".to_string(),
-                severity: "LOW".to_string(),
             },
         ]
     }
