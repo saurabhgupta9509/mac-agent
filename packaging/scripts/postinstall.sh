@@ -50,15 +50,32 @@ cat <<EOF > "$CHROME_NMH_DIR/com.dlp.agent.json"
   "path": "$INSTALL_DIR/dlp-agent",
   "type": "stdio",
   "allowed_origins": [
+    "chrome-extension://djjppioopfigijlolbjjehckocofaimh/",
     "chrome-extension://*/*"
   ]
 }
 EOF
 cp "$CHROME_NMH_DIR/com.dlp.agent.json" "$EDGE_NMH_DIR/"
 
-# Force-Install Browser Extension via defaults
-echo "[postinstall] Registering Chrome Force-Install Policy..."
-defaults write /Library/Preferences/com.google.Chrome ExtensionInstallForcelist -array-add "hjgfkknnhljghcghkmlclnblbllkffdp;file://$EXT_DIR/extension.crx" 2>/dev/null || true
+# Auto-Install Browser Extension via External Extensions (Chrome, Edge, Brave)
+echo "[postinstall] Registering Browser External Extensions for automatic loading..."
+CHROME_EXT_DIR="/Library/Application Support/Google/Chrome/External Extensions"
+EDGE_EXT_DIR="/Library/Application Support/Microsoft Edge/External Extensions"
+BRAVE_EXT_DIR="/Library/Application Support/BraveSoftware/Brave-Browser/External Extensions"
+
+mkdir -p "$CHROME_EXT_DIR" "$EDGE_EXT_DIR" "$BRAVE_EXT_DIR"
+
+cat <<EOF > "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json"
+{
+  "external_path": "$EXT_DIR"
+}
+EOF
+
+cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$EDGE_EXT_DIR/" 2>/dev/null || true
+cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$BRAVE_EXT_DIR/" 2>/dev/null || true
+
+defaults write /Library/Preferences/com.google.Chrome ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
+defaults write /Library/Preferences/com.microsoft.Edge ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
 
 # ── 2. Loading Services ───────────────────────────────────────────────────────
 echo "[postinstall] Loading LaunchDaemon (root service)..."

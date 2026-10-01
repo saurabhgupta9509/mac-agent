@@ -3,6 +3,7 @@
   "name": "DLP Security Agent",
   "version": "1.0.0",
   "description": "Enterprise Data Loss Prevention Browser Extension for macOS",
+  "key": "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEArAyKIH5Qk8Z7RvV0u3KHcVN6NK+2UFHg4JPJee5MGIaCMCoOqWOz97qKEE5Ivko0z5oc0sHIcih+4rzV9or7F3mKFKKxUHt0NgoJiN0Lka7L0MZFQhrd9z/VDtsMiBo+xr0MM6w8g8rzRUSp0mN5/gsJl/ehe4HgGwo+w1JGsYIBtfNID+gy5aJEqN0UuRXuieZ4v7amuue4W5EehznJlHwp0ys19NSNHB7fbU6iclVQ1u4TvTIJhn7mz2VBGhExtudBte2IjSKROcordhwdxkioPgHjZsFVeFZx0mlJvLAEPTDuXYUTbP3i6lvoq9rSukaJ3vcdLwlFIxRgP6xD7QIDAQAB",
   "permissions": [
     "tabs",
     "storage",
