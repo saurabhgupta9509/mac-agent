@@ -169,4 +169,48 @@ impl PolicyEngine {
 
         true
     }
+
+    /// Robustly extracts string items from policy data regardless of server JSON schema:
+    /// Supports:
+    /// - Direct JSON array: ["a.com", "b.com"]
+    /// - Object with "patterns": {"patterns": ["a.com"]}
+    /// - Object with "domains": {"domains": ["a.com"]}
+    /// - Object with "blockedUrls" / "urls" / "blocked": {"blockedUrls": ["a.com"]}
+    /// - Comma/newline separated strings
+    pub fn get_explicit_block_list(&self, policy_code: &str) -> Vec<String> {
+        if let Some(policy) = self.policies.iter().find(|p| p.code == policy_code && p.is_active && self.is_within_schedule(p)) {
+            let data = policy.policy_data.trim();
+            if data.is_empty() {
+                return Vec::new();
+            }
+
+            // 1. Direct JSON array: ["a", "b"]
+            if let Ok(list) = serde_json::from_str::<Vec<String>>(data) {
+                return list;
+            }
+
+            // 2. JSON Object with array field: {"patterns": [...]}, {"domains": [...]}, etc.
+            if let Ok(val) = serde_json::from_str::<serde_json::Value>(data) {
+                if let Some(obj) = val.as_object() {
+                    for key in &["patterns", "domains", "urls", "blockedUrls", "blockedDomains", "devices", "list", "blocked", "sites"] {
+                        if let Some(arr_val) = obj.get(*key) {
+                            if let Some(arr) = arr_val.as_array() {
+                                return arr.iter()
+                                    .filter_map(|v| v.as_str().map(|s| s.to_string()))
+                                    .collect();
+                            }
+                        }
+                    }
+                }
+            }
+
+            // 3. Fallback: comma or newline separated plain text
+            return data.split(|c| c == ',' || c == '\n' || c == '\r')
+                .map(|s| s.trim().to_string())
+                .filter(|s| !s.is_empty() && !s.starts_with('{') && !s.starts_with('['))
+                .collect();
+        }
+        Vec::new()
+    }
 }
+

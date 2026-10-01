@@ -59,11 +59,11 @@ const PROXY_PORT: u16 = 8888;
 // ─── Policy data from server ──────────────────────────────────────────────────
 #[derive(Debug, Clone, Serialize, Deserialize, Default)]
 pub struct WebPolicyData {
-    #[serde(rename = "blockedUrls", default)]
+    #[serde(alias = "patterns", alias = "urls", alias = "blockedUrls", default)]
     pub blocked_urls: Vec<String>,        // URL patterns to block
-    #[serde(rename = "blockedDomains", default)]
+    #[serde(alias = "domains", alias = "blockedDomains", default)]
     pub blocked_domains: Vec<String>,     // Domains to block at DNS level
-    #[serde(rename = "partialAccessSites", default)]
+    #[serde(alias = "sites", alias = "partialAccessSites", default)]
     pub partial_access_sites: Vec<String>, // Sites with upload/download blocked
 }
 
@@ -107,30 +107,34 @@ impl WebProtectionModule {
         let block_active    = policy_engine.is_policy_active(POLICY_WEB_URL_BLOCK);
         let partial_active  = policy_engine.is_policy_active(POLICY_WEB_PARTIAL_ACCESS);
 
-        // Load policy data if any web policy is active
-        if monitor_active || block_active || partial_active {
-            // Start MITM proxy if not running
-            if !self.proxy_running {
-                self.start_proxy_and_configure_system().await?;
-            }
+        // 1. Handle URL Blocking via DNS (/etc/hosts)
+        if block_active {
+            let mut domains = policy_engine.get_explicit_block_list(POLICY_WEB_URL_BLOCK);
+            let data: WebPolicyData = policy_engine.get_policy_json_data(POLICY_WEB_URL_BLOCK);
+            domains.extend(data.blocked_domains);
+            domains.extend(data.blocked_urls);
 
-            // Refresh block lists from server
-            if block_active {
-                let data: WebPolicyData = policy_engine.get_policy_json_data(POLICY_WEB_URL_BLOCK);
-                self.blocked_domains_cache = data.blocked_domains.into_iter().collect();
-                self.blocked_domains_cache.extend(
-                    data.blocked_urls.into_iter()
-                );
-                // Apply DNS-level blocking for domains
-                self.apply_dns_block(&self.blocked_domains_cache.clone().into_iter().collect()).await;
+            let new_set: HashSet<String> = domains.into_iter().collect();
+            if new_set != self.blocked_domains_cache {
+                info!("[WebProtection] 🚫 Applying DNS block for {} domains/patterns: {:?}", new_set.len(), new_set);
+                self.apply_dns_block(&new_set.clone().into_iter().collect()).await;
+                self.blocked_domains_cache = new_set;
             }
+        } else if !self.blocked_domains_cache.is_empty() {
+            info!("[WebProtection] 🌐 Web URL block inactive — clearing /etc/hosts blocks");
+            self.apply_dns_block(&Vec::new()).await;
+            self.blocked_domains_cache.clear();
+        }
 
-            if partial_active {
-                let data: WebPolicyData = policy_engine.get_policy_json_data(POLICY_WEB_PARTIAL_ACCESS);
-                self.partial_sites_cache = data.partial_access_sites.into_iter().collect();
-            }
-        } else if self.proxy_running {
-            // No web policies active — remove proxy settings
+        // 2. Handle Partial Access / Monitoring
+        if partial_active {
+            let data: WebPolicyData = policy_engine.get_policy_json_data(POLICY_WEB_PARTIAL_ACCESS);
+            self.partial_sites_cache = data.partial_access_sites.into_iter().collect();
+        }
+
+        if (monitor_active || partial_active) && !self.proxy_running {
+            self.start_proxy_and_configure_system().await?;
+        } else if !(monitor_active || partial_active) && self.proxy_running {
             self.remove_proxy_configuration().await;
             self.proxy_running = false;
         }
@@ -232,9 +236,13 @@ impl WebProtectionModule {
             let clean_domain = domain
                 .trim_start_matches("http://")
                 .trim_start_matches("https://")
-                .split('/').next().unwrap_or(domain);
-            new_content += &format!("0.0.0.0 {} # DLP-AGENT-BLOCK\n", clean_domain);
-            new_content += &format!("0.0.0.0 www.{} # DLP-AGENT-BLOCK\n", clean_domain);
+                .split('/').next().unwrap_or(domain)
+                .trim();
+            if !clean_domain.is_empty() {
+                let bare_domain = clean_domain.trim_start_matches("www.");
+                new_content += &format!("0.0.0.0 {} # DLP-AGENT-BLOCK\n", bare_domain);
+                new_content += &format!("0.0.0.0 www.{} # DLP-AGENT-BLOCK\n", bare_domain);
+            }
         }
 
         if let Err(e) = std::fs::write("/etc/hosts", &new_content) {

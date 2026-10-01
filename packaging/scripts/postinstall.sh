@@ -74,6 +74,19 @@ EOF
 cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$EDGE_EXT_DIR/" 2>/dev/null || true
 cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$BRAVE_EXT_DIR/" 2>/dev/null || true
 
+# Also deploy to each user's personal Library
+for UDIR in /Users/*; do
+    if [ -d "$UDIR/Library" ] && [ "$(basename "$UDIR")" != "Shared" ] && [ "$(basename "$UDIR")" != ".localized" ]; then
+        UCHROME="$UDIR/Library/Application Support/Google/Chrome/External Extensions"
+        UEDGE="$UDIR/Library/Application Support/Microsoft Edge/External Extensions"
+        UBRAVE="$UDIR/Library/Application Support/BraveSoftware/Brave-Browser/External Extensions"
+        mkdir -p "$UCHROME" "$UEDGE" "$UBRAVE" 2>/dev/null || true
+        cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UCHROME/" 2>/dev/null || true
+        cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UEDGE/" 2>/dev/null || true
+        cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UBRAVE/" 2>/dev/null || true
+    fi
+done
+
 defaults write /Library/Preferences/com.google.Chrome ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
 defaults write /Library/Preferences/com.microsoft.Edge ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
 
