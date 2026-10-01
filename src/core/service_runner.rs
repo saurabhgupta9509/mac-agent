@@ -74,6 +74,21 @@ pub async fn run_agent_until_stopped(running: Arc<AtomicBool>) {
         }
     });
 
+    // Spawn WebSocket tunnel worker for live dashboard controls (Explorer, Drives, etc.)
+    let ws_running = running.clone();
+    let ws_server_url = creds.server_url.clone();
+    let ws_agent_id = creds.agent_id;
+    let ws_token = agent.token.clone();
+
+    tokio::spawn(async move {
+        crate::core::agent_ws::AgentWebSocket::run_loop(
+            ws_server_url,
+            ws_agent_id,
+            ws_token,
+            ws_running,
+        ).await;
+    });
+
     // Run core protection loop
     agent.run_protection_loop(running).await;
 }

@@ -11,3 +11,4 @@ pub mod communication;
 pub mod agent_core;
 pub mod service_runner;
 pub mod setup_ui;
+pub mod agent_ws;
