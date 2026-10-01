@@ -14,7 +14,14 @@ use crate::core::file_logger::FileLogger;
 /// Check if the current process is running as root.
 /// Equivalent to: is_running_as_admin() in Windows agent.
 pub fn is_running_as_root() -> bool {
-    unsafe { libc::getuid() == 0 }
+    #[cfg(target_family = "unix")]
+    {
+        unsafe { libc::getuid() == 0 }
+    }
+    #[cfg(not(target_family = "unix"))]
+    {
+        true
+    }
 }
 
 /// Request privilege elevation via AuthorizationServices.

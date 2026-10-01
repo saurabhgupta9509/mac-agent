@@ -79,6 +79,7 @@ local_ipaddress = "0.1"
 whatlang = "0.16"
 unicode-segmentation = "1.10"
 fallible = "0.1"
+libc = "0.2"
 ring = "0.17"
 tract-onnx = "0.21"
 

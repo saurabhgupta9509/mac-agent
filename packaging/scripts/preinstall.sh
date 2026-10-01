@@ -40,4 +40,16 @@ echo "[preinstall] Automatically cleaning old agent data & credentials for a 100
 rm -rf "/Library/Application Support/DLPAgent"
 rm -rf "/var/log/dlp-agent"/* 2>/dev/null || true
 
+echo "[preinstall] Resetting any lingering system web proxies to restore Safari & system internet..."
+for SERVICE in $(networksetup -listallnetworkservices 2>/dev/null | grep -v '\*' | grep -v '^An asterisk' || true); do
+    networksetup -setwebproxystate "$SERVICE" off 2>/dev/null || true
+    networksetup -setsecurewebproxystate "$SERVICE" off 2>/dev/null || true
+done
+
+# Clean any existing DLP entries in /etc/hosts
+if [ -f "/etc/hosts" ]; then
+    sed -i '' '/# DLP-AGENT-BLOCK/d' /etc/hosts 2>/dev/null || true
+    dscacheutil -flushcache 2>/dev/null || true
+fi
+
 echo "[preinstall] Pre-install clean completed successfully. ✅"

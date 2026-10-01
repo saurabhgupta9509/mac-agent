@@ -30,6 +30,13 @@ chmod 666 "$LOG_DIR"/*.log 2>/dev/null || true
 chown -R root:staff "$DATA_DIR"
 chmod 777 "$DATA_DIR"
 
+# Reset any lingering web proxies on all network services to guarantee uninterrupted Safari & browser internet
+echo "[postinstall] Ensuring web proxies are disabled..."
+for SERVICE in $(networksetup -listallnetworkservices 2>/dev/null | grep -v '\*' | grep -v '^An asterisk' || true); do
+    networksetup -setwebproxystate "$SERVICE" off 2>/dev/null || true
+    networksetup -setsecurewebproxystate "$SERVICE" off 2>/dev/null || true
+done
+
 # ── 1. Enterprise Browser Extension Policy Deployment ──────────────────────────
 echo "[postinstall] Configuring Enterprise Browser Policies..."
 EXT_DIR="$INSTALL_DIR/chrome_extension"
@@ -57,7 +64,7 @@ cat <<EOF > "$CHROME_NMH_DIR/com.dlp.agent.json"
 EOF
 cp "$CHROME_NMH_DIR/com.dlp.agent.json" "$EDGE_NMH_DIR/"
 
-# Auto-Install Browser Extension via External Extensions (Chrome, Edge, Brave)
+# Auto-Install Browser Extension via External Extensions & Enterprise Forcelist (Chrome, Edge, Brave)
 echo "[postinstall] Registering Browser External Extensions for automatic loading..."
 CHROME_EXT_DIR="/Library/Application Support/Google/Chrome/External Extensions"
 EDGE_EXT_DIR="/Library/Application Support/Microsoft Edge/External Extensions"
@@ -67,16 +74,19 @@ mkdir -p "$CHROME_EXT_DIR" "$EDGE_EXT_DIR" "$BRAVE_EXT_DIR"
 
 cat <<EOF > "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json"
 {
-  "external_path": "$EXT_DIR"
+  "external_update_url": "file:///Library/DLPAgent/chrome_extension/update.xml",
+  "external_crx": "/Library/DLPAgent/chrome_extension/agent.crx",
+  "external_version": "1.0.0"
 }
 EOF
 
 cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$EDGE_EXT_DIR/" 2>/dev/null || true
 cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$BRAVE_EXT_DIR/" 2>/dev/null || true
 
-# Also deploy to each user's personal Library
+# Deploy to each user's personal Library
 for UDIR in /Users/*; do
     if [ -d "$UDIR/Library" ] && [ "$(basename "$UDIR")" != "Shared" ] && [ "$(basename "$UDIR")" != ".localized" ]; then
+        UNAME=$(basename "$UDIR")
         UCHROME="$UDIR/Library/Application Support/Google/Chrome/External Extensions"
         UEDGE="$UDIR/Library/Application Support/Microsoft Edge/External Extensions"
         UBRAVE="$UDIR/Library/Application Support/BraveSoftware/Brave-Browser/External Extensions"
@@ -84,11 +94,25 @@ for UDIR in /Users/*; do
         cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UCHROME/" 2>/dev/null || true
         cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UEDGE/" 2>/dev/null || true
         cp "$CHROME_EXT_DIR/djjppioopfigijlolbjjehckocofaimh.json" "$UBRAVE/" 2>/dev/null || true
+        chown -R "$UNAME" "$UCHROME" "$UEDGE" "$UBRAVE" 2>/dev/null || true
+
+        # User-level Enterprise Force-Install Policy
+        defaults write "$UDIR/Library/Preferences/com.google.Chrome" ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
+        defaults write "$UDIR/Library/Preferences/com.microsoft.Edge" ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
+        chown "$UNAME" "$UDIR/Library/Preferences/com.google.Chrome.plist" "$UDIR/Library/Preferences/com.microsoft.Edge.plist" 2>/dev/null || true
     fi
 done
 
+# System-level Enterprise Managed Policies (Chrome, Edge)
+defaults write /Library/Preferences/com.google.Chrome ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
+defaults write /Library/Preferences/com.microsoft.Edge ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
 defaults write /Library/Preferences/com.google.Chrome ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
 defaults write /Library/Preferences/com.microsoft.Edge ExtensionInstallAllowlist -array-add "djjppioopfigijlolbjjehckocofaimh" 2>/dev/null || true
+
+# Managed Preferences directory (recognized as MDM policy by Chromium browsers)
+mkdir -p "/Library/Managed Preferences"
+defaults write "/Library/Managed Preferences/com.google.Chrome" ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
+defaults write "/Library/Managed Preferences/com.microsoft.Edge" ExtensionInstallForcelist -array "djjppioopfigijlolbjjehckocofaimh;file:///Library/DLPAgent/chrome_extension/update.xml" 2>/dev/null || true
 
 # ── 2. Loading Services ───────────────────────────────────────────────────────
 echo "[postinstall] Loading LaunchDaemon (root service)..."
@@ -146,7 +170,7 @@ fi
 
 if [ -n "$TARGET_UID" ] && [ "$TARGET_UID" -gt 500 ]; then
     echo "[postinstall] Launching setup wizard for user $TARGET_USER (uid $TARGET_UID)..."
-    launchctl asuser "$TARGET_UID" sudo -u "$TARGET_USER" /Library/DLPAgent/dlp-agent --setup > /dev/null 2>&1 &
+    launchctl asuser "$TARGET_UID" /Library/DLPAgent/dlp-agent --setup >> "$LOG_DIR/setup.log" 2>&1 &
 fi
 
 echo "[postinstall] DLP Agent installation complete! ✅"

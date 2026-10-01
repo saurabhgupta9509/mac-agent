@@ -88,10 +88,39 @@ pub struct WebProtectionModule {
 
 impl WebProtectionModule {
     pub fn new() -> Self {
+        // Automatically ensure any lingering system web proxy is cleared so Safari/browsers are never blocked by a dead proxy
+        let services = Self::get_network_services_static();
+        for service in &services {
+            let _ = std::process::Command::new("networksetup")
+                .args(&["-setwebproxystate", service, "off"])
+                .output();
+            let _ = std::process::Command::new("networksetup")
+                .args(&["-setsecurewebproxystate", service, "off"])
+                .output();
+        }
+
         WebProtectionModule {
             proxy_running: false,
             blocked_domains_cache: HashSet::new(),
             partial_sites_cache: HashSet::new(),
+        }
+    }
+
+    fn get_network_services_static() -> Vec<String> {
+        let output = std::process::Command::new("networksetup")
+            .arg("-listallnetworkservices")
+            .output();
+
+        match output {
+            Ok(o) => {
+                String::from_utf8_lossy(&o.stdout)
+                    .lines()
+                    .skip(1)
+                    .filter(|l| !l.starts_with('*') && !l.is_empty())
+                    .map(|l| l.trim().to_string())
+                    .collect()
+            }
+            Err(_) => vec!["Wi-Fi".to_string(), "Ethernet".to_string()],
         }
     }
 
@@ -103,7 +132,7 @@ impl WebProtectionModule {
         _token: &str,
     ) -> Result<(), Box<dyn Error + Send + Sync>> {
 
-        let monitor_active  = policy_engine.is_policy_active(POLICY_WEB_MONITOR_HISTORY);
+        let _monitor_active = policy_engine.is_policy_active(POLICY_WEB_MONITOR_HISTORY);
         let block_active    = policy_engine.is_policy_active(POLICY_WEB_URL_BLOCK);
         let partial_active  = policy_engine.is_policy_active(POLICY_WEB_PARTIAL_ACCESS);
 
@@ -126,15 +155,15 @@ impl WebProtectionModule {
             self.blocked_domains_cache.clear();
         }
 
-        // 2. Handle Partial Access / Monitoring
+    // 2. Handle Partial Access / Monitoring
         if partial_active {
             let data: WebPolicyData = policy_engine.get_policy_json_data(POLICY_WEB_PARTIAL_ACCESS);
             self.partial_sites_cache = data.partial_access_sites.into_iter().collect();
         }
 
-        if (monitor_active || partial_active) && !self.proxy_running {
-            self.start_proxy_and_configure_system().await?;
-        } else if !(monitor_active || partial_active) && self.proxy_running {
+        // Never redirect system traffic to a non-existent port (8888).
+        // Ensure system proxy remains disabled so Safari and system internet are never broken.
+        if self.proxy_running {
             self.remove_proxy_configuration().await;
             self.proxy_running = false;
         }
