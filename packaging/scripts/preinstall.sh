@@ -15,11 +15,29 @@ if [ "$OS_VERSION" -lt "$MIN_MACOS" ]; then
 fi
 echo "[preinstall] ✅ macOS version OK: $(sw_vers -productVersion)"
 
-echo "[preinstall] Unloading existing service if present..."
+echo "[preinstall] Stopping and unloading existing services if present..."
 DAEMON_PLIST="/Library/LaunchDaemons/com.dlpagent.daemon.plist"
 if [ -f "$DAEMON_PLIST" ]; then
     launchctl bootout system "$DAEMON_PLIST" 2>/dev/null || true
     echo "[preinstall] Existing daemon unloaded."
 fi
 
-echo "[preinstall] Pre-install checks passed. ✅"
+# Unload LaunchAgent for all active users
+for UDIR in /Users/*; do
+    UNAME=$(basename "$UDIR")
+    if [ "$UNAME" != "Shared" ] && [ "$UNAME" != ".localized" ]; then
+        UID_C=$(id -u "$UNAME" 2>/dev/null || echo 0)
+        if [ "$UID_C" -gt 500 ]; then
+            launchctl bootout "gui/$UID_C/com.dlpagent.agent" 2>/dev/null || true
+        fi
+    fi
+done
+
+# Kill any lingering dlp-agent processes
+killall -9 dlp-agent 2>/dev/null || true
+
+echo "[preinstall] Automatically cleaning old agent data & credentials for a 100% fresh setup..."
+rm -rf "/Library/Application Support/DLPAgent"
+rm -rf "/var/log/dlp-agent"/* 2>/dev/null || true
+
+echo "[preinstall] Pre-install clean completed successfully. ✅"

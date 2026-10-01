@@ -96,29 +96,27 @@ if [ -f "$INSTALL_DIR/dlp-agent-privacy.mobileconfig" ]; then
 fi
 
 # ── 4. Auto-Launch Setup & Activation Wizard ──────────────────────────────────
-if [ ! -f "$DATA_DIR/agent.creds" ]; then
-    echo "[postinstall] No existing credentials found. Launching Setup Wizard in active user GUI session..."
-    TARGET_USER="$CONSOLE_USER"
-    TARGET_UID="$CONSOLE_UID"
+echo "[postinstall] Launching Setup Wizard in active user GUI session..."
+TARGET_USER="$CONSOLE_USER"
+TARGET_UID="$CONSOLE_UID"
 
-    if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ] || [ -z "$TARGET_UID" ] || [ "$TARGET_UID" -le 500 ]; then
-        for UDIR in /Users/*; do
-            UNAME=$(basename "$UDIR")
-            if [ "$UNAME" != "Shared" ] && [ "$UNAME" != ".localized" ]; then
-                UID_C=$(id -u "$UNAME" 2>/dev/null || echo 0)
-                if [ "$UID_C" -gt 500 ]; then
-                    TARGET_USER="$UNAME"
-                    TARGET_UID="$UID_C"
-                    break
-                fi
+if [ -z "$TARGET_USER" ] || [ "$TARGET_USER" = "root" ] || [ -z "$TARGET_UID" ] || [ "$TARGET_UID" -le 500 ]; then
+    for UDIR in /Users/*; do
+        UNAME=$(basename "$UDIR")
+        if [ "$UNAME" != "Shared" ] && [ "$UNAME" != ".localized" ]; then
+            UID_C=$(id -u "$UNAME" 2>/dev/null || echo 0)
+            if [ "$UID_C" -gt 500 ]; then
+                TARGET_USER="$UNAME"
+                TARGET_UID="$UID_C"
+                break
             fi
-        done
-    fi
+        fi
+    done
+fi
 
-    if [ -n "$TARGET_UID" ] && [ "$TARGET_UID" -gt 500 ]; then
-        echo "[postinstall] Launching setup wizard for user $TARGET_USER (uid $TARGET_UID)..."
-        launchctl asuser "$TARGET_UID" sudo -u "$TARGET_USER" /Library/DLPAgent/dlp-agent --setup > /dev/null 2>&1 &
-    fi
+if [ -n "$TARGET_UID" ] && [ "$TARGET_UID" -gt 500 ]; then
+    echo "[postinstall] Launching setup wizard for user $TARGET_USER (uid $TARGET_UID)..."
+    launchctl asuser "$TARGET_UID" sudo -u "$TARGET_USER" /Library/DLPAgent/dlp-agent --setup > /dev/null 2>&1 &
 fi
 
 echo "[postinstall] DLP Agent installation complete! ✅"
